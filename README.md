@@ -91,20 +91,30 @@ sequenceDiagram
   participant Bw as Bob wallet
   actor B as Bob (buyer)
   par Alice (seller) proposes trade
+  rect rgb(200, 150, 255)
     A->>Aw: deposit Asset-1 token A1
     Aw->>A1: lock asset-1 token(s) to Escrow
     A1->>A1: set Escrow as delegate for A1
     A1-->>Aw: lock event (lockId, UTXO hash for A1)
     A1-->>Bw: lock event (lockId, UTXO hash for A1)
   end
+  end
   par Alice sends partial secret for A1 to Bob to verify the trade proposal
+    rect rgb(200, 150, 255)
     A->>B: salt for A1
+    end
+    rect rgb(191, 223, 255)
     B->>B: verify A1 == H(Bob pub key, expected trade value, salt)?
+    end
   end
   par Bob (buyer) rejects the trade proposal
+  rect rgb(191, 223, 255)
     B->>Bw: disapprove proposal (do nothing)
+  end
+  rect rgb(200, 150, 255)
     A->>Aw: rescind offer
     Aw->>A1: unlock token(s) A1 to recover the value
+  end
   end
 ```
 
@@ -120,29 +130,39 @@ sequenceDiagram
   participant Bw as Bob wallet
   actor B as Bob (buyer)
   par Alice (seller) proposes trade
+  rect rgb(200, 150, 255)
     A->>Aw: deposit Asset-1 token A1
     Aw->>A1: lock asset-1 token(s) to Escrow
     A1->>A1: set Escrow as delegate for A1
     A1-->>Aw: lock event (lockId, UTXO hash for A1)
     A1-->>Bw: lock event (lockId, UTXO hash for A1)
   end
+  end
   par Alice sends partial secret for A1 to Bob to verify the trade proposal
+  rect rgb(200, 150, 255)
     A->>B: salt for A1
     B->>B: verify A1 == H(Bob pub key, expected trade value, salt)?
   end
+  end
   par Bob (buyer) accepts the trade proposal
+  rect rgb(191, 223, 255)
     B->>Bw: approves proposal
     Bw->>A2: transfers Asset-2 tokens amount=A2 to Escrow<br>creates lockId<->ciphertext map entry
     A2->>A2: moves amount=A2 to Escrow account
     Bw->>A2: approves Alice to see the encrypted value just transferred
     A2->>A2: calls allow(ciphertext, Alice)
   end
+  end
   par Alice verifies the trade response
+  rect rgb(200, 150, 255)
     A->>A2: queries the ciphertext (transfer amount), decrypts to verify expected value
   end
+  end
   par Alice (seller) rejects the trade response
+  rect rgb(200, 150, 255)
     A->>Aw: rescind the offer
     Aw->>A1: unlock token(s) A1 to recover the value
+  end
   end
 ```
 
