@@ -24,8 +24,8 @@ sequenceDiagram
   participant A2 as Asset-2 contract<br>(FHE)
   participant Bw as Bob wallet
   actor B as Bob (buyer)
-  rect rgb(191, 223, 255)
   par Alice (seller) proposes trade
+  rect rgb(200, 150, 255)
     A->>Aw: deposit Asset-1 token A1
     Aw->>A1: lock asset-1 token(s) to Escrow
     A1->>A1: set Escrow as delegate for A1
@@ -34,28 +34,40 @@ sequenceDiagram
   end
   end
   par Alice sends partial secret for A1 to Bob to verify the trade proposal
+  rect rgb(200, 150, 255)
     A->>B: salt for A1
     B->>B: verify A1 == H(Bob pub key, expected trade value, salt)?
   end
+  end
   par Bob (buyer) accepts the trade proposal
+  rect rgb(191, 223, 255)
     B->>Bw: approves proposal
     Bw->>A2: transfers Asset-2 tokens amount=A2 to Escrow<br>creates lockId<->ciphertext map entry
     A2->>A2: moves amount=A2 to Escrow account
     Bw->>A2: approves Alice to see the encrypted value just transferred
     A2->>A2: calls allow(ciphertext, Alice)
   end
+  end
   par Alice (seller) verifies the trade response
+  rect rgb(200, 150, 255)
     A->>A2: queries the ciphertext (transfer amount), decrypts to verify expected value
   end
+  end
   par Alice (seller) accepts the trade response & completes the trade proposal
+  rect rgb(200, 150, 255)
     A->>E: setup atomic trade: deliveryLockId = lockId-1
     B->>E: complete atomic trade: paymentId = ciphertextHandle
   end
+  end
   par trade execution approvals
+    rect rgb(200, 150, 255)
     A->>Aw: approves trade
     Aw->>A1: delegate lockId-1 to the escrow contract
+    end
+    rect rgb(191, 223, 255)
     B->>Bw: approves trade
     Bw->>A2: calls allow(ciphertext, Escrow)
+    end
   end
   par trade execution
     A->>E: execute trade
