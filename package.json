@@ -1,0 +1,17 @@
+{
+  "devDependencies": {
+    "@fhevm/hardhat-plugin": "^0.1.0",
+    "@iden3/js-merkletree": "^1.5.1",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "hardhat": "^2.26.5"
+  },
+  "dependencies": {
+    "@iden3/contracts": "^3.1.0",
+    "@openzeppelin/confidential-contracts": "^0.3.0-rc.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "zeto-js": "file:../zeto/zkp/js",
+    "zeto-solidity": "file:../zeto/solidity"
+  }
+}
