@@ -24,12 +24,14 @@ sequenceDiagram
   participant A2 as Asset-2 contract<br>(FHE)
   participant Bw as Bob wallet
   actor B as Bob (buyer)
+  rect rgb(191, 223, 255)
   par Alice (seller) proposes trade
     A->>Aw: deposit Asset-1 token A1
     Aw->>A1: lock asset-1 token(s) to Escrow
     A1->>A1: set Escrow as delegate for A1
     A1-->>Aw: lock event (lockId-1, UTXO hash for A1)
     A1-->>Bw: lock event (lockId-1, UTXO hash for A1)
+  end
   end
   par Alice sends partial secret for A1 to Bob to verify the trade proposal
     A->>B: salt for A1
