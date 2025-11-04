@@ -6,7 +6,7 @@ This project demonstrates a number of DvP patterns for atomic settlement between
 
 Two major designs of privacy preserving tokens are covered:
 
-- Fully Homomorphic Encryption (FHE) based. This category of tokens tend to use an account model for managing the onchain states, where a map of account addresses and encrypted balances is maintained by the token contract. In particular, the Confidential ERC20 tokens implemented in https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/tree/master based on Zama was used in the example.
+- Homomorphic Encryption (FHE) based. This category of tokens tend to use an account model for managing the onchain states, where a map of account addresses and encrypted balances is maintained by the token contract. Can be based on either additive homomorphic encryption such as ElGamal, as in [Zether](https://github.com/Consensys/anonymous-zether), or fully homomorphic encryption (FHE), as in the Confidential ERC20 tokens implemented in https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/tree/master based on Zama, which is used in the example.
 - Commitment based. This category of tokens tend to use a UTXO model for the onchain states, where each UTXO is a hash-based commitment to the secrets of the token (owner, value). Exmaples of this design pattern include Zcash, Railgun, and LFDT Paladin's Noto and Zeto tokens.
 
 ## DvP Pattern 1: Confidential ERC20 with deposit in escrow vs. Zeto with locking
