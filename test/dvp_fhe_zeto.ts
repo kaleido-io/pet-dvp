@@ -19,7 +19,7 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { ContractTransactionReceipt, ZeroHash } from "ethers";
 import { expect } from "chai";
 import { Merkletree, InMemoryDB, str2Bytes } from "@iden3/js-merkletree";
-import { loadCircuit } from "zeto-js";
+import { loadCircuit, Poseidon } from "zeto-js";
 
 process.env.SKIP_ZETO_TESTS = "true";
 import { prepareProof, encodeToBytes } from "zeto-solidity/test/zeto_anon_nullifier";
@@ -34,7 +34,8 @@ import {
   parseUTXOEvents,
 } from "zeto-solidity/test/lib/utils";
 import { deployZeto } from "zeto-solidity/test/lib/deploy";
-import { loadProvingKeys, deployAtomIntance, calculateAtomAddress } from "zeto-solidity/test/utils";
+import { loadProvingKeys } from "zeto-solidity/test/utils";
+import { Atom } from "../typechain-types";
 
 describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible tokens", function () {
   // users interacting with each other in the DvP transactions
@@ -45,6 +46,7 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
   // instances of the contracts
   let zkPayment: any;
   let fheERC20: any;
+  let atomInstance: any;
   let atomInstanceAddress: string; // the contract for the atomic settlement
 
   // Alice's payment UTXOs to be minted and transferred
@@ -133,17 +135,16 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
 
   describe("Trade flow between Alice (using Zeto tokens) and Bob (using FHE ERC20 tokens)", function () {
     let lockedUtxo: UTXO;
+    let utxoLockEvent: any;
+    let salt: bigint;
     let encodedCallDataAlice: string;
     let encodedCallDataBob: string;
-    let sequenceNumber: number;
 
-    before(async function () {
-      sequenceNumber = 0;
-    });
-
-    it("Alice and Bob agrees on an Atom contract address", async function () {
-      atomInstanceAddress = await calculateAtomAddress(sequenceNumber);
-      console.log("Calculated Atom contract address", atomInstanceAddress);
+    it("Alice and Bob agrees on an Atom contract instance to use for the trade", async function () {
+      const atomFactory = await ethers.getContractFactory("Atom");
+      atomInstance = await atomFactory.deploy();
+      console.log("Atom contract instance deployed at", atomInstance.target);
+      atomInstanceAddress = atomInstance.target as string;
     });
 
     it("Alice locks a UTXO to initiate a trade with Bob", async function () {
@@ -191,6 +192,16 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
         events[0].lockedOutputs[0],
         ethers.toBigInt(events[0].delegate),
       );
+      utxoLockEvent = events[0];
+      // Alice will share this with Bob in secure p2p communication channels
+      salt = lockedUtxo.salt! as bigint;
+    });
+
+    it("Bob uses the Zeto event and the salt received from Alice to verify the trade proposal", async function () {
+      // Bob knows the expected value of the locked UTXO, based his prior negotiation with Alice
+      const expectedValue = BigInt(100);
+      const expectedHashForLockedUtxo = getUTXOHash(expectedValue, salt, Alice);
+      expect(utxoLockEvent.lockedOutputs[0]).to.equal(expectedHashForLockedUtxo);
     });
 
     it("Alice prepares a proof to spend the locked state, designating the Atom contract as the delegate", async function () {
@@ -264,8 +275,8 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
           callData: encodedCallDataBob,
         }
       ]
-      const deployedAtomAddress = await deployAtomIntance(sequenceNumber, operations);
-      expect(deployedAtomAddress).to.equal(atomInstanceAddress);
+      const tx = await atomInstance.connect(Alice.signer).initialize(operations);
+      await tx.wait();
     });
 
     it("One of Alice or Bob executes the Atom contract to complete the trade", async function () {
@@ -302,3 +313,7 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
     });
   });
 }).timeout(600000);
+
+function getUTXOHash(value: bigint, salt: bigint, owner: User): bigint {
+  return Poseidon.poseidon4([value, salt, owner.babyJubPublicKey[0], owner.babyJubPublicKey[1]]) as bigint;
+}
