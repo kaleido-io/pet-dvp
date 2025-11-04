@@ -34,7 +34,6 @@ contract Atom {
 
     error ExecutionResult(OperationResult[] result);
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _hasBeenInitialized = false;
     }
