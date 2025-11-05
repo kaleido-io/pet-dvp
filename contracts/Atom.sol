@@ -2,7 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {ISwappableFheERC20} from "./ISwappableFheERC20.sol";
+import {ISwappableFheERC20} from "./interfaces/ISwappableFheERC20.sol";
+import {IZetoLockable} from "zeto-solidity/contracts/lib/interfaces/izeto_lockable.sol";
 
 contract Atom {
     using Address for address;
@@ -14,8 +15,11 @@ contract Atom {
     }
 
     struct Operation {
+        // TODO: once (if) we have figured out how to make a generic enough interface,
+        // this should just be the ILockable interface
         address contractAddress;
-        bytes callData;
+        bytes32 lockId;
+        bytes callData; // for the FHE ERC20 tokens, until we have a generic enough interface
     }
 
     struct OperationResult {
@@ -24,8 +28,6 @@ contract Atom {
     }
 
     Status public status;
-
-    uint256 private _operationCount;
     Operation[] private _operations;
     bool private _hasBeenInitialized;
 
@@ -53,8 +55,7 @@ contract Atom {
      */
     function initialize(Operation[] memory operations) external onlyOnce {
         status = Status.Pending;
-        _operationCount = operations.length;
-        for (uint256 i = 0; i < _operationCount; i++) {
+        for (uint256 i = 0; i < operations.length; i++) {
             _operations.push(operations[i]);
         }
         emit AtomStatusChanged(status);
@@ -71,38 +72,28 @@ contract Atom {
      * Execute the operations in the Atom.
      * Reverts if the Atom has been executed or cancelled, or if any operation fails.
      */
-    function execute() external {
+    function settle() external {
         if (status != Status.Pending) {
             revert AtomNotPending();
         }
         status = Status.Executed;
 
-        for (uint256 i = 0; i < _operationCount; i++) {
+        for (uint256 i = 0; i < _operations.length; i++) {
             Operation storage op = _operations[i];
-            op.contractAddress.functionCall(op.callData);
+            if (op.callData.length > 0) {
+                (bool success, bytes memory returnData) = op
+                    .contractAddress
+                    .call(op.callData);
+                OperationResult[] memory results = new OperationResult[](1);
+                results[0] = OperationResult(success, returnData);
+                if (!success) {
+                    revert ExecutionResult(results);
+                }
+            } else {
+                IZetoLockable(op.contractAddress).settleLock(op.lockId, "");
+            }
         }
         emit AtomStatusChanged(status);
-    }
-
-    /**
-     * Simulate the execution of the operations in the Atom.
-     * This function always reverts with the encoded results of the operations
-     * (even if all operations succeed). It should only be used with eth_call,
-     * as a transaction with this method will always revert.
-     */
-    function simulate() external returns (OperationResult[] memory results) {
-        if (status != Status.Pending) {
-            revert AtomNotPending();
-        }
-
-        results = new OperationResult[](_operationCount);
-        for (uint256 i = 0; i < _operationCount; i++) {
-            Operation storage op = _operations[i];
-            (results[i].success, results[i].returnData) = op
-                .contractAddress
-                .call(op.callData);
-        }
-        revert ExecutionResult(results);
     }
 
     /**
@@ -110,28 +101,13 @@ contract Atom {
      * Can only be done if the Atom is still pending.
      */
     function cancel() external {
-        if (status != Status.Pending) {
+        if (status != Status.Pending || status != Status.Executed) {
             revert AtomNotPending();
         }
         status = Status.Cancelled;
+        for (uint256 i = 0; i < _operations.length; i++) {
+            // TODO: should just call ILockable.refundLock(op.lockId)
+        }
         emit AtomStatusChanged(status);
-    }
-
-    function getOperationCount() external view returns (uint256) {
-        return _operationCount;
-    }
-
-    function getOperation(
-        uint256 n
-    ) external view returns (Operation memory operation) {
-        return _operations[n];
-    }
-
-    function getOperations()
-        external
-        view
-        returns (Operation[] memory operations)
-    {
-        return _operations;
     }
 }

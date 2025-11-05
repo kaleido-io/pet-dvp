@@ -24,7 +24,7 @@ import { loadCircuit, Poseidon } from "zeto-js";
 process.env.SKIP_ZETO_TESTS = "true";
 process.env.SKIP_ANON_TESTS = "true";
 import { prepareProof, encodeToBytes } from "zeto-solidity/test/zeto_anon_nullifier";
-import { prepareProof as prepareProofLocked } from "zeto-solidity/test/zeto_anon";
+import { prepareProof as prepareProofLocked, encodeToBytes as encodeToBytesLocked } from "zeto-solidity/test/zeto_anon";
 import {
   UTXO,
   User,
@@ -248,7 +248,7 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
             outputs: [paymentForBob.hash, changeForAlice.hash],
             lockedOutputs: [],
           },
-          proof: encodeToBytes(0n, encodedProof),
+          proof: encodeToBytesLocked(encodedProof),
           data: "0x",
         }
         const refundOperation = {
@@ -283,19 +283,16 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
         );
       });
 
-      it("Alice to encode the call to settle the lock by the lockId", async function () {
-        // Alice encodes the call to settle the lock by the lockId
-        encodedCallDataAlice = zkPayment.interface.encodeFunctionData("executeLock", [lockId, "0x", "0x"]);
-      });
-
       it("Alice and Bob each produce the encoded call data and initialize the Atom contract", async function () {
         const operations = [
           {
             contractAddress: zkPayment.target,
-            callData: encodedCallDataAlice,
+            lockId: lockId,
+            callData: "0x",
           },
           {
             contractAddress: fheERC20.target,
+            lockId: "0x0000000000000000000000000000000000000000000000000000000000000000",
             callData: encodedCallDataBob,
           }
         ]
@@ -317,10 +314,10 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
         ).to.eventually.equal(950);
 
         if (Math.random() < 0.5) {
-          const tx = await atomInstance.connect(Alice.signer).execute();
+          const tx = await atomInstance.connect(Alice.signer).settle();
           await tx.wait();
         } else {
-          const tx = await atomInstance.connect(Bob.signer).execute();
+          const tx = await atomInstance.connect(Bob.signer).settle();
           await tx.wait();
         }
 

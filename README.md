@@ -41,7 +41,7 @@ sequenceDiagram
   end
   par Bob (buyer) accepts the trade proposal
   rect rgb(191, 223, 255)
-    B->>Bw: approves proposal
+    B->>Bw: accepts proposal
     Bw->>A2: transfers Asset-2 tokens amount=A2 to Escrow<br>creates lockId<->ciphertext map entry
     A2->>A2: moves amount=A2 to Escrow account
     Bw->>A2: approves Alice to see the encrypted value just transferred

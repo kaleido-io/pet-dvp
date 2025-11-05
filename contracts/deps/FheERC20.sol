@@ -5,7 +5,7 @@ import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ISwappableFheERC20} from "./ISwappableFheERC20.sol";
+import {ISwappableFheERC20} from "../interfaces/ISwappableFheERC20.sol";
 
 // only used in hardhat tests
 // import {Atom} from "paladin/contracts/shared/Atom.sol";
