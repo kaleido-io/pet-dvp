@@ -1,48 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint64, ebool, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
-import {FHESafeMath} from "@openzeppelin/confidential-contracts/utils/FHESafeMath.sol";
-import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FheERC20} from "./FheERC20.sol";
 import {ILockableConfidentialERC20} from "../interfaces/ILockableConfidentialERC20.sol";
 import {console} from "hardhat/console.sol";
 
-// only used in hardhat tests
-// import {Atom} from "paladin/contracts/shared/Atom.sol";
-
-contract FheERC20Lockable is
-    ERC7984,
-    Ownable,
-    SepoliaConfig,
-    ILockableConfidentialERC20
-{
+contract FheERC20Lockable is FheERC20, ILockableConfidentialERC20 {
     mapping(bytes32 => Lock) private _locks;
     mapping(address => euint64) private _lockedBalances;
-
-    constructor()
-        ERC7984("Test ERC7984 Lockable", "tERC7984L", "https://test.com")
-        Ownable(msg.sender)
-    {}
-
-    function mint(
-        address to,
-        externalEuint64 amount,
-        bytes calldata proof
-    ) public onlyOwner {
-        euint64 encryptedAmount = FHE.fromExternal(amount, proof);
-        _mint(to, encryptedAmount);
-    }
-
-    function burn(
-        address from,
-        externalEuint64 amount,
-        bytes calldata proof
-    ) public onlyOwner {
-        euint64 encryptedAmount = FHE.fromExternal(amount, proof);
-        _burn(from, encryptedAmount);
-    }
 
     function createLock(
         bytes32 lockId,

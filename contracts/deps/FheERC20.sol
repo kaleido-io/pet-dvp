@@ -7,9 +7,6 @@ import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC798
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IConfidentialBalanceCheck} from "../interfaces/IConfidentialBalanceCheck.sol";
 
-// only used in hardhat tests
-// import {Atom} from "paladin/contracts/shared/Atom.sol";
-
 contract FheERC20 is
     ERC7984,
     Ownable,
