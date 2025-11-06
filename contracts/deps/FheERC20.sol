@@ -5,12 +5,17 @@ import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ISwappableFheERC20} from "../interfaces/ISwappableFheERC20.sol";
+import {IConfidentialBalanceCheck} from "../interfaces/IConfidentialBalanceCheck.sol";
 
 // only used in hardhat tests
 // import {Atom} from "paladin/contracts/shared/Atom.sol";
 
-contract FheERC20 is ERC7984, Ownable, SepoliaConfig, ISwappableFheERC20 {
+contract FheERC20 is
+    ERC7984,
+    Ownable,
+    SepoliaConfig,
+    IConfidentialBalanceCheck
+{
     constructor()
         ERC7984("Test ERC7984", "tERC7984", "https://test.com")
         Ownable(msg.sender)
