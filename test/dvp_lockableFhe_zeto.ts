@@ -89,9 +89,9 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
     ));
 
     // deploy the FHE ERC20 contract for the FHE ERC20 tokens
-    const factory = await ethers.getContractFactory("FheERC20");
+    const factory = await ethers.getContractFactory("FheERC20Lockable");
     fheERC20 = await factory.connect(Deployer.signer).deploy();
-    console.log(`FHE ERC20 contract deployed at ${fheERC20.target}`);
+    console.log(`FHE ERC20 Lockable contract deployed at ${fheERC20.target}`);
   });
 
   it("mint to Alice some payment tokens in Zeto", async function () {
@@ -133,6 +133,9 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
     let lockedUtxo: UTXO;
     let utxoLockEvent: any;
     let salt: bigint;
+    let lockIdAlice: string;
+    let lockIdBob: string;
+    let lockEventBob: any;
 
     let atomInstance: any;
 
@@ -202,32 +205,33 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
         expect(utxoLockEvent.lockedOutputs[0]).to.equal(expectedHashForLockedUtxo);
       });
 
-      it("Bob transfers 50 of his FHE ERC20 tokens to the Atom contract & approves Alice to access the encrypted amount", async function () {
-        // Bob first transfers 50 of his FHE ERC20 tokens to the Atom contract
+      it("Bob locks 50 of his FHE ERC20 tokens", async function () {
+        // Bob locks 50 of his FHE ERC20 tokens, designating the Atom contract as the delegate
         const encryptedInput = await fhevm
           .createEncryptedInput(fheERC20.target, Bob.ethAddress)
           .add64(50)
           .encrypt();
 
-        const tx1 = await fheERC20.connect(Bob.signer)["confidentialTransfer(address,bytes32,bytes)"](atomInstance.target, encryptedInput.handles[0], encryptedInput.inputProof);
-        await tx1.wait();
+        lockIdBob = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde0";
+        const tx1 = await fheERC20.connect(Bob.signer).createLock(lockIdBob, Alice.ethAddress, atomInstance.target, encryptedInput.handles[0], encryptedInput.inputProof, "0x");
+        const result: ContractTransactionReceipt | null = await tx1.wait();
 
-        // Bob then approves Alice to access the encrypted amount, in order for Alice to 
-        // verify the trade proposal response, by checking the balance of the Atom contract in the FHE ERC20 contract
-        const tx2 = await atomInstance.connect(Bob.signer).allowBalanceCheck(fheERC20, Alice.ethAddress);
-        await tx2.wait();
+        lockEventBob = parseLockEvents(fheERC20, result!);
+        expect(lockEventBob.lockId).to.equal(lockIdBob);
+        expect(lockEventBob.delegate).to.equal(atomInstance.target);
       });
 
-      it("Alice verifies the trade proposal response from Bob, by checking the balance of the Atom contract in the FHE ERC20 contract", async function () {
+      it("Alice verifies the trade proposal response from Bob, by checking the encrypted amount in the LockCreated event", async function () {
         // Alice verifies the trade proposal
-        const encryptedAmount = await fheERC20.confidentialBalanceOf(atomInstance.target);
-        const decryptedAmount = await fhevm.userDecryptEuint(FhevmType.euint64, encryptedAmount, fheERC20.target, Alice.signer);
-        expect(decryptedAmount).to.equal(50);
+        const lockedAmount = lockEventBob.amount;
+        const decryptedLockedAmount = await fhevm.userDecryptEuint(FhevmType.euint64, lockedAmount, fheERC20.target, Alice.signer);
+        expect(decryptedLockedAmount).to.equal(50);
+        expect(lockEventBob.owner).to.equal(Bob.ethAddress);
+        expect(lockEventBob.receiver).to.equal(Alice.ethAddress);
       });
     });
 
     describe("Trade approvals", function () {
-      let lockId: string;
       it("Alice approves the trade by committing to the lock, and designating the Atom contract as the delegate", async function () {
         // Alice prepares an output UTXO for Bob as the output of the trade
         const paymentForBob = newUTXO(75, Bob);
@@ -241,7 +245,7 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
           [Bob, Alice],
           atomInstance.target, // the Atom contract will be the delegate
         );
-        lockId = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        lockIdAlice = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde1";
         const settleOperation = {
           outputStates: {
             outputs: [paymentForBob.hash, changeForAlice.hash],
@@ -258,11 +262,11 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
           proof: "0x",
           data: "0x",
         }
-        const commitLockTx = await zkPayment.connect(Alice.signer).commitLock(lockId, [lockedUtxo.hash], atomInstance.target, settleOperation, refundOperation, "0x");
+        const commitLockTx = await zkPayment.connect(Alice.signer).commitLock(lockIdAlice, [lockedUtxo.hash], atomInstance.target, settleOperation, refundOperation, "0x");
         await commitLockTx.wait();
 
         // now Alice can delegate the lock to the Atom contract
-        const delegateLockTx = await zkPayment.connect(Alice.signer).delegateLock(lockId, atomInstance.target, "0x");
+        const delegateLockTx = await zkPayment.connect(Alice.signer).delegateLock(lockIdAlice, atomInstance.target, "0x");
         await delegateLockTx.wait();
       });
 
@@ -270,29 +274,15 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
         // Bob decodes the LockCommit event...
       });
 
-      it("Bob encodes the call to transfer from the Atom contract to Alice", async function () {
-        // Bob then encodes the call to transfer from the Atom contract to Alice
-        const encryptedInput2 = await fhevm
-          .createEncryptedInput(fheERC20.target, atomInstance.target)
-          .add64(50)
-          .encrypt();
-        encodedCallDataBob = fheERC20.interface.encodeFunctionData(
-          "confidentialTransfer(address,bytes32,bytes)",
-          [Alice.ethAddress, encryptedInput2.handles[0], encryptedInput2.inputProof]
-        );
-      });
-
       it("Alice and Bob each produce the encoded call data and initialize the Atom contract", async function () {
         const operations = [
           {
-            contractAddress: zkPayment.target,
-            lockId: lockId,
-            callData: "0x",
+            lockableContract: zkPayment,
+            lockId: lockIdAlice,
           },
           {
-            contractAddress: fheERC20.target,
-            lockId: "0x0000000000000000000000000000000000000000000000000000000000000000",
-            callData: encodedCallDataBob,
+            lockableContract: fheERC20,
+            lockId: lockIdBob,
           }
         ]
         const tx = await atomInstance.connect(Alice.signer).initialize(operations);
@@ -338,4 +328,23 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
 
 function getUTXOHash(value: bigint, salt: bigint, owner: User): bigint {
   return Poseidon.poseidon4([value, salt, owner.babyJubPublicKey[0], owner.babyJubPublicKey[1]]) as bigint;
+}
+
+function parseLockEvents(
+  lockContract: any,
+  result: ContractTransactionReceipt,
+) {
+  for (const log of result.logs || []) {
+    const event = lockContract.interface.parseLog(log as any);
+    if (event?.name === "LockCreated") {
+      return {
+        lockId: event?.args.lockId,
+        owner: event?.args.owner,
+        receiver: event?.args.receiver,
+        delegate: event?.args.delegate,
+        amount: event?.args.amount,
+      };
+    }
+  }
+  return null;
 }
