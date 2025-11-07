@@ -38,19 +38,19 @@ contract Atom is Ownable {
     error NotApprover(address approver);
 
     Status public status;
-    bool private _hasBeenInitialized;
+    bool private _initialized;
     operation[] private _operations;
 
     constructor() Ownable(msg.sender) {
-        _hasBeenInitialized = false;
+        _initialized = false;
     }
 
-    modifier onlyOnce() {
+    modifier initializedOnlyOnce() {
         require(
-            !_hasBeenInitialized,
+            !_initialized,
             "The Atom contract has already been initialized."
         );
-        _hasBeenInitialized = true;
+        _initialized = true;
         _;
     }
 
@@ -65,17 +65,17 @@ contract Atom is Ownable {
     }
 
     /**
-     * Initialize the Atom with a list of operations.
+     * Initialize the Atom with a operation for the trade offer.
      */
     function initialize(
-        Operation[] memory operations
-    ) external onlyOnce onlyOwner {
+        Operation[] memory _ops
+    ) external initializedOnlyOnce onlyOwner {
         status = Status.Pending;
-        for (uint256 i = 0; i < operations.length; i++) {
+        for (uint256 i = 0; i < _ops.length; i++) {
             operation memory op = operation(
-                operations[i].lockableContract,
-                operations[i].approver,
-                operations[i].lockId,
+                _ops[i].lockableContract,
+                _ops[i].approver,
+                _ops[i].lockId,
                 false
             );
             _operations.push(op);
@@ -137,7 +137,7 @@ contract Atom is Ownable {
         }
         status = Status.Cancelled;
         for (uint256 i = 0; i < _operations.length; i++) {
-            _operations[i].lockableContract.refundLock(
+            _operations[i].lockableContract.rollbackLock(
                 _operations[i].lockId,
                 ""
             );

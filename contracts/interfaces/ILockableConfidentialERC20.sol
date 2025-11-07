@@ -21,7 +21,7 @@ interface ILockableConfidentialERC20 is ILockable {
         euint64 amount,
         bytes data
     );
-    event LockRefunded(
+    event LockRolledBack(
         bytes32 lockId,
         address owner,
         address receiver,

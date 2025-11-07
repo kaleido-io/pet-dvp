@@ -72,7 +72,7 @@ contract FheERC20Lockable is FheERC20, ILockableConfidentialERC20 {
         );
     }
 
-    function refundLock(bytes32 lockId, bytes calldata data) public {
+    function rollbackLock(bytes32 lockId, bytes calldata data) public {
         Lock memory lock = _locks[lockId];
         require(
             lock.delegate == msg.sender,
@@ -91,7 +91,7 @@ contract FheERC20Lockable is FheERC20, ILockableConfidentialERC20 {
         FHE.allow(ptr, lock.owner);
         _lockedBalances[lock.owner] = ptr;
 
-        emit LockRefunded(
+        emit LockRolledBack(
             lockId,
             lock.owner,
             lock.receiver,
