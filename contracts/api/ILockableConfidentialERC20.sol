@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ILockable} from "zeto-solidity/contracts/lib/interfaces/ILockable.sol";
+import {ILockable} from "./ILockable.sol";
 
 interface ILockableConfidentialERC20 is ILockable {
     event LockCreated(

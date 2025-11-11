@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {FheERC20} from "./FheERC20.sol";
-import {ILockableConfidentialERC20} from "../interfaces/ILockableConfidentialERC20.sol";
+import {ILockableConfidentialERC20} from "../api/ILockableConfidentialERC20.sol";
 import {console} from "hardhat/console.sol";
 
 contract FheERC20Lockable is FheERC20, ILockableConfidentialERC20 {

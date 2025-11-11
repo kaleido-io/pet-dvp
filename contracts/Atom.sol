@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IConfidentialBalanceCheck} from "./interfaces/IConfidentialBalanceCheck.sol";
+import {IConfidentialBalanceCheck} from "./deps/interfaces/IConfidentialBalanceCheck.sol";
 import {ILockable} from "zeto-solidity/contracts/lib/interfaces/ILockable.sol";
 
 contract Atom is Ownable {
