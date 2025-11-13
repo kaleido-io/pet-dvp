@@ -1,4 +1,4 @@
-// Copyright © 2024 Kaleido, Inc.
+// Copyright © 2025 Kaleido, Inc.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -39,7 +39,7 @@ import {
 import { deployZeto } from "zeto-solidity/test/lib/deploy";
 import { loadProvingKeys } from "zeto-solidity/test/utils";
 
-describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible tokens", function () {
+describe("DvP flows between privacy tokens implementing the locking interface", function () {
   // users interacting with each other in the DvP transactions
   let Deployer: User; // the minter of the FHE ERC20 tokens and Zeto tokens
   let Alice: User; // the user who holds the Zeto tokens
@@ -294,11 +294,11 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
 
     describe("Trade execution", function () {
       it("One of Alice or Bob executes the Atom contract to complete the trade", async function () {
-        // check the balance of Alice
+        // check the balance of Alice. it should be 0
         const balanceAliceBefore = await fheERC20.confidentialBalanceOf(Alice.signer);
         expect(balanceAliceBefore).to.equal(ZeroHash);
 
-        // check the balance of Bob
+        // check the balance of Bob. it should be 950 because Bob locked 50 of his FHE ERC20 tokens
         const balanceBobBefore = await fheERC20.confidentialBalanceOf(Bob.signer);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, balanceBobBefore, fheERC20.target, Bob.signer),
@@ -312,13 +312,13 @@ describe("DvP flows between FHE based ERC20 tokens and Zeto based fungible token
           await tx.wait();
         }
 
-        // check the balance of Alice
+        // check the balance of Alice. it should be 50 because Alice received 50 of Bob's FHE ERC20 tokens
         const balanceAliceAfter = await fheERC20.confidentialBalanceOf(Alice.signer);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, balanceAliceAfter, fheERC20.target, Alice.signer),
         ).to.eventually.equal(50);
 
-        // check the balance of Bob
+        // check the balance of Bob. it should be 950 because Bob transferred 50 of his FHE ERC20 tokens to Alice
         const balanceBobAfter = await fheERC20.confidentialBalanceOf(Bob.signer);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, balanceBobAfter, fheERC20.target, Bob.signer),
