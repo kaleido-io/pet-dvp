@@ -15,7 +15,7 @@
   - [Failure case #1 - counterparty fails to fulfill obligations during setup phase](#failure-case-1-counterparty-fails-to-fulfill-obligations-during-setup-phase)
   - [Failure case #2 - a malicious party attempting to initialize with invalid Operations](#failure-case-2-a-malicious-party-attempting-to-initialize-with-invalid-operations)
 
-This document is a proposal of an ERC for performing multi-leg settlements among an arbitrary number of privacy enhancing tokens, in a secure and atomic manner.
+This document proposes an ERC for performing multi-leg settlements among an arbitrary number of privacy-enhancing tokens in a secure and atomic manner.
 
 ## The Privacy Enhancing Tokens Landscape
 
@@ -23,11 +23,11 @@ A number of privacy enhancing token designs exist in the Ethereum ecosystem toda
 
 ### Homomorphic Encryption based Tokens
 
-This category of tokens protect the confidentiality of the onchain states and transaction payloads with encryption. In particular, homomorphic encryption is used that enables operations to be performed onchain against the states. These encryption schemes provide the ability for the smart contracts to operate on the ciphertexts, and more crucially, to enforce spending policies such as mass conservation and non-negative balances, purely with onchain components.
+This category of tokens protects the confidentiality of onchain states and transaction payloads through encryption. In particular, homomorphic encryption enables operations to be performed onchain against the states. These encryption schemes allow smart contracts to operate on ciphertexts and, more importantly, to enforce spending policies such as mass conservation and non-negative balances, purely through onchain components.
 
-> We are using the term "onchain components" above in a loose sense. Some essential components like the co-processor for performing the computation intensive FHE operations may be considered trusted offchain components. But given they are part of the "protocol" set up, rather than requiring client-side, or wallet-side, components like is the case with commitments based tokens, we call them "onchain components" for brevity.
+> We are using the term "onchain components" above in a loose sense. Some essential components like the co-processor for performing the computation-intensive FHE operations may be considered trusted offchain components. But given they are part of the "protocol" setup, rather than requiring client-side or wallet-side components like is the case with commitment-based tokens, we call them "onchain components" for brevity.
 
-This category of tokens tend to use an account model for managing the onchain states, where a map of account addresses and encrypted balances is maintained by the token contract.
+This category of tokens typically uses an account model for managing onchain states, where a map of account addresses and encrypted balances is maintained by the token contract.
 
 The encryption scheme must be a fully homomorphic encryption (FHE) system, to support all the necessary operations onchain, including arithmetic comparisons that are crucial to enforce token spending policies, without requiring clients to submit proofs of correct encryption.
 
@@ -47,7 +47,7 @@ This category of tokens protect the confidentiality of the onchain states and tr
 
 If the commitments are based on hashes, no operations can be performed on the commitments during state transition. The smart contract must completely rely on a ZKP submitted by the transaction sender to verify if the state transitions are proposed correctly, obeying all spending rules such as mass conservation and entitlement.
 
-Due to the disjoint nature of the commiments, the state model is inevitablely **UTXO** (Unspent Transaction Output) based. This model has the advantage of supporting parallel processing, where the same spending account can submit many transactions simultaneously, each consuming a different collection of the account's UTXOs. This means these tokens do not suffer from the concurrent spending limits as the tokens based on homomorphic commitments do.
+Due to the disjoint nature of the commitments, the state model is inevitably **UTXO** (Unspent Transaction Output) based. This model has the advantage of supporting parallel processing, where the same spending account can submit many transactions simultaneously, each consuming a different collection of the account's UTXOs. This means these tokens do not suffer from the concurrent spending limits that tokens based on homomorphic commitments (described below) do.
 
 Many privacy tokens fit in this category, including:
 
@@ -60,17 +60,17 @@ The samples in this repository are built with the Zeto token implementation.
 
 #### Homomorphic Commitments
 
-If the commitments are based on additive homomorphic encryption, or homomorphic commitment (such as Pedersen commitment), the smart contract can perform additions on the commitments. However, the smart contract must still rely on ZKPs to guarantee correctness of the calculated commitments, such as mass conservation and entitlement. The homomorphic property of the commitment scheme makes it possible to "roll up" all the state commitments for an account to a single commitment, rather than staying as individual commitments, thus resulting in more efficient storage usage. However these token designs suffer from limited throughput due to the concurrency requirement between the proof-generating client and the onchain verification logic.
+If the commitments are based on additive homomorphic encryption, or homomorphic commitment (such as Pedersen commitment), the smart contract can perform additions on the commitments. However, the smart contract must still rely on ZKPs to guarantee correctness of the calculated commitments, such as mass conservation and entitlement. The homomorphic property of the commitment scheme makes it possible to "roll up" all the state commitments for an account to a single commitment, rather than staying as individual commitments, thus resulting in more efficient storage usage. However, these token designs suffer from limited throughput due to the concurrency requirement between the proof-generating client and the onchain verification logic.
 
-Examples includes:
+Examples include:
 
 - [Zether](https://github.com/Consensys/anonymous-zether), based on additively homomorphic encryption with ElGamal
 - Solana's [Confidential Transfer](https://www.solana-program.com/docs/confidential-balances), based on Pedersen commitments
 - Avalanche's [Encrypted ERC-20](https://github.com/ava-labs/EncryptedERC), based on a custom partially homomorphic encryption scheme
 
-## Atomic Settlements b/w Privacy Tokens
+## Atomic Settlements Between Privacy Tokens
 
-To demonstrate atomic settlements among privacy tokens, exemplary token implementations are selected to represent the major design patterns in the current privacy enhancing tokens landscape, as described above. In particular, an implementation from the FHE based design was selected, Openzeppelin's Confidential ERC20, and an implementation from the commitment based design was selected, LFDT's Zeto token.
+To demonstrate atomic settlements among privacy tokens, exemplary token implementations are selected to represent the major design patterns in the current privacy-enhancing tokens landscape, as described above. In particular, an implementation from the FHE-based design was selected—OpenZeppelin's Confidential ERC20—and an implementation from the commitment-based design was selected—LFDT's Zeto token.
 
 Among the two tokens, 3 types of settlement flows can be implemented:
 
@@ -78,7 +78,7 @@ Among the two tokens, 3 types of settlement flows can be implemented:
 - Confidential ERC20 vs. Zeto
 - Zeto vs. Zeto
 
-The examples in this repository will demonstrate that **_a generic locking based settlement mechanism_** can be developed to support the major design patterns of privacy enhancing tokens, in multi-leg atomic settlement flows.
+The examples in this repository demonstrate that **_a generic locking-based settlement mechanism_** can be developed to support the major design patterns of privacy-enhancing tokens in multi-leg atomic settlement flows.
 
 ### Lock interfaces for the privacy tokens
 
@@ -111,10 +111,10 @@ function delegateLock(
 ) external;
 ```
 
-There are slight differences in the function signature due to the different onchain state model used by account based tokens vs. UTXO based tokens. But the locking mechanism is the same and works as follows:
+There are slight differences in the function signature due to the different onchain state model used by account-based tokens vs. UTXO-based tokens. But the locking mechanism is the same and works as follows:
 
-- A lock must be created in a one-time opportunity with `createLock` and can not be modified except for changing thd delegate. This is done for safety reasons: we do not want the trading counterparty to cheat by redirecting the locked funds to somewhere else after we have committed our part of the trade agreement.
-- The `creatLock` function should be carefully implemented to guarantee true locking, such that the locked assets can not be transferred again except for the lock's settlement or rollback.
+- A lock must be created in a one-time opportunity with `createLock` and cannot be modified except for changing the delegate. This is done for safety reasons: we do not want the trading counterparty to cheat by redirecting the locked funds elsewhere after we have committed our part of the trade agreement.
+- The `createLock` function should be carefully implemented to guarantee true locking, such that the locked assets cannot be transferred again except for the lock's settlement or rollback.
 - The trade counterparty must be able to inspect the createLock transaction and verify that the `settle` operation represents the intended asset value and movement, as agreed upon. Given the confidential (and anonymous in the case of certain token implementations) nature of the token, the ability to fully verify may depend on secret sharing from the asset owner via out-of-band channels. This is dependent on the specific token implementation.
 - The `delegate` is an important concept for the lock mechanism to work. This is the only party that can carry out the intended operations to settle, or to rollback either when the trade falls apart (one of the counterparties failed to fulfill their commitment), or when the settlement fails to execute. Typically the delegate should be a smart contract, with trusted processing logic to settle and to rollback under the expected conditions.
 
@@ -139,17 +139,17 @@ Finally, a settlement orchestration contract implementation, `Atom`, is provided
 function initialize(Operation[] memory _ops) external initializedOnlyOnce onlyOwner
 ```
 
-The `initialize()` function is the one-time opportunity to put the diferent legs of a settlement in the contract. This is designed for security reasons: we otherwise do not know what are the expected list of participants in the trade, and as such can not prevent a random party (with malicious intent) from appending an invalid Operation and invalidate the setup.
+The `initialize()` function is the one-time opportunity to put the different legs of a settlement in the contract. This is designed for security reasons: otherwise, we do not know what the expected list of participants in the trade is, and as such cannot prevent a random party (with malicious intent) from appending an invalid Operation and invalidating the setup.
 
-This design assumes that necessary negotations and orchestrations will happen ahead of time, with each of the trading participants having verified the setup of the locks in the relevant token contracts. A trusted party can then call the `initialize()` function on behalf of all the trading participants. The trusted party can either be a smart contract, or an externally owned account (EOA) held by a mutually trusted entity.
+This design assumes that necessary negotiations and orchestrations will happen ahead of time, with each of the trading participants having verified the setup of the locks in the relevant token contracts. A trusted party can then call the `initialize()` function on behalf of all the trading participants. The trusted party can either be a smart contract or an externally owned account (EOA) held by a mutually trusted entity.
 
-After the `initialize()` call, each of the trading parties must be given an opportunity to review the initialized operations, by checking the `lockId` and the `approver` to be the right ones. And checking that the corresponding locks on the respective token contracts are securing the expected amount of assets for the trade. Then each of the trading parties should signal their approval to the escrow contract. Only after all approvals are given, should the `settle()` function be allowed to execute.
+After the `initialize()` call, each of the trading parties must be given an opportunity to review the initialized operations by checking that the `lockId` and the `approver` are correct, and that the corresponding locks on the respective token contracts are securing the expected amount of assets for the trade. Then each of the trading parties should signal their approval to the escrow contract. Only after all approvals are given should the `settle()` function be allowed to execute.
 
 On the other hand, any of the trading parties should be allowed to call `cancel()` on the orchestrator contract, before all the approvals are given. This prevents a malicious party from holding up the settlement by staying silent.
 
-### Successful Settlement Flow
+### Successful Settlement Flow #1 - Confidential ERC20 vs. Confidential UTXO
 
-The diagram below illustrates a full settlement flow that results in the successful settlement between two trading participants, one (Alice) using a Confidential UTXO token vs. and one (Bob) using a Confidential ERC20 token.
+The diagram below illustrates a full settlement flow that results in the successful settlement between two trading participants: one (Alice) using a Confidential UTXO token and one (Bob) using a Confidential ERC20 token.
 
 ```mermaid
 sequenceDiagram
@@ -214,7 +214,7 @@ sequenceDiagram
 
 The locking mechanism must have safety features that protect against the following failure scenarios. A failure scenario can either be due to an intentional decision against the proposal, or malicious action to fail to fulfill required obligations.
 
-Because the proposed mechanism focuses on intra-chain settlements only, meaning all the target tokens are deployed on the same chain, the risks are all in the setup phase, where each counterpart is expected to fulfill their side of the bargain obligation. Once the setup is complete and approved, the final settlement happens atomically guaranteed by the underlying blockchain protocol.
+Because the proposed mechanism focuses on intra-chain settlements only, meaning all the target tokens are deployed on the same chain, the risks are all in the setup phase, where each counterparty is expected to fulfill their side of the bargain obligation. Once the setup is complete and approved, the final settlement happens atomically, guaranteed by the underlying blockchain protocol.
 
 ```mermaid
 sequenceDiagram
@@ -261,7 +261,7 @@ sequenceDiagram
 
 To support this scenario:
 
-- The Escrow contract must allow a partially setup trade to be canceled, but only by the trade participants as designated by the list of Operations.
+- The Escrow contract must allow a partially set up trade to be cancelled, but only by the trade participants as designated by the list of Operations.
 
 ### Failure case #2 - a malicious party attempting to initialize with invalid Operations
 
@@ -302,5 +302,5 @@ sequenceDiagram
 
 To guard against this case:
 
-- the escrow contract initialization must happen first, then each of the trade legs is set up, by using the lockId's proposed in the list of operations passed to `initialize()`.
-- the `cancel()` function of the escrow contract must be implemented to catch reverts in the downstream calls to the token contracts' `rollbackLock()` function. Otherwise a malicious participant can implement a lock that reverts on rollback, and prevents other participants from getting back their locked assets.
+- The escrow contract initialization must happen first, then each of the trade legs is set up, using the lockIds proposed in the list of operations passed to `initialize()`.
+- The `cancel()` function of the escrow contract must be implemented to catch reverts in the downstream calls to the token contracts' `rollbackLock()` function. Otherwise, a malicious participant can implement a lock that reverts on rollback and prevents other participants from getting back their locked assets.
